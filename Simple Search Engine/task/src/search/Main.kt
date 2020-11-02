@@ -1,26 +1,44 @@
 package search
 
 import java.util.*
+import java.util.stream.Collectors
+
+val scanner = Scanner(System.`in`)
 
 fun main() {
-    val scanner = Scanner(System.`in`)
-    val line = scanner.nextLine()
-    val word = scanner.nextLine()
+    val db = initDb()
 
-    var index = 1
-    var result = 0
-
-    for (s in line.split(" ")) {
-        if (s == word) {
-            result = index
-            break
+    print("Enter the number of search queries:\n")
+    val noOfQueries = scanner.nextInt()
+    println()
+    repeat(noOfQueries) {
+        println("Enter data to search people:")
+        val data = scanner.next().toLowerCase()
+        val search = db.stream()
+                .filter { t -> t.any { it.toLowerCase().contains(data.toLowerCase())} }
+                .collect(Collectors.toList())
+        if (search.isEmpty()) {
+            print("No matching people found.\n")
+        } else {
+            println()
+            print("Found people:\n")
+            search.stream()
+                    .map { it.joinToString(" ")}
+                    .forEach(::println)
         }
-        index++
+        println()
     }
+}
 
-    if (result == 0) {
-        print("Not found")
-    } else {
-        print(result)
+private fun initDb(): MutableList<List<String>> {
+    print("Enter the number of people:\n")
+    val noOfPeople = scanner.nextInt()
+    print("Enter all people:\n")
+    scanner.nextLine()
+    val db = mutableListOf<List<String>>()
+    repeat(noOfPeople) {
+        db.add(scanner.nextLine().split(" "))
     }
+    println()
+    return db
 }
