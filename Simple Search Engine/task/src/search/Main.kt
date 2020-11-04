@@ -12,9 +12,11 @@ fun main(args: Array<String>) {
         printBanner()
         when (scanner.nextLine()) {
             "1" -> {
+                println("Select a matching strategy: ALL, ANY, NONE")
+                val strategy = Strategy.valueOf(scanner.nextLine())
                 println("Enter a name or email to search all suitable people.")
-                val data = scanner.nextLine().toLowerCase()
-                searchEngine.findPerson(data)
+                val data = scanner.nextLine().toLowerCase().split(" ")
+                searchEngine.findPerson(data, strategy)
             }
             "2" -> searchEngine.printDb()
             "0" -> break
@@ -52,22 +54,39 @@ class SearchEngine(private val db: List<List<String>>) {
         return map.toMap()
     }
 
-    fun findPerson(data: String) {
-        val search = invertedIndex.entries
-                .filter { entry -> entry.key == data }
-                .flatMap { entry -> entry.value }
-                .distinct()
-                .map ( db::get )
-                .map { it.joinToString(" ") }
+    fun findPerson(query: List<String>, strategy: Strategy) {
+        val results = query.map(::getIndexWithData)
                 .toList()
-        if (search.isEmpty()) {
+
+        val searchIndexes = collectResults(results, strategy)
+        if (searchIndexes.isEmpty()) {
             print("No matching people found.\n")
         } else {
             println()
             print("Found people:\n")
-            search.forEach(::println)
+            searchIndexes.map(db::get)
+                    .map { it.joinToString(" ") }
+                    .forEach(::println)
         }
         println()
+    }
+
+    private fun collectResults(results: List<List<Int>>, strategy: Strategy): List<Int> {
+        return when (strategy) {
+            Strategy.ANY -> results.flatten().distinct()
+            Strategy.ALL -> results.reduce(::bothPresent)
+            Strategy.NONE -> {
+                val indexList = db.indices.toMutableList()
+                results.forEach {
+                    indexList.removeAll(it)
+                }
+                return indexList
+            }
+        }
+    }
+
+    private fun bothPresent(list1: List<Int>, list2: List<Int>): List<Int> {
+        return list1.intersect(list2).toList()
     }
 
     fun printDb() {
@@ -76,10 +95,20 @@ class SearchEngine(private val db: List<List<String>>) {
                 .forEach(::println)
     }
 
+    private fun getIndexWithData(data: String): List<Int> =
+            invertedIndex.entries
+                    .filter { entry -> entry.key == data }
+                    .flatMap { entry -> entry.value }
+                    .distinct()
+
     companion object {
         fun initDb(path: String): SearchEngine {
             return SearchEngine(File(path).readLines()
                     .map { it.split(" ") })
         }
     }
+}
+
+enum class Strategy {
+    ALL, ANY, NONE
 }
