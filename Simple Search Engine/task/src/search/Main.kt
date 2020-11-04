@@ -1,12 +1,13 @@
 package search
 
+import java.io.File
 import java.util.*
 import java.util.stream.Collectors
 
 val scanner = Scanner(System.`in`)
 
-fun main() {
-    val db = initDb()
+fun main(args: Array<String>) {
+    val db = initDb(args)
 
     while (true) {
         printBanner()
@@ -23,7 +24,7 @@ fun printBanner() {
     print("=== Menu ===\n1. Find a person\n2. Print all people\n0. Exit\n")
 }
 
-fun findPerson(db: MutableList<List<String>>) {
+fun findPerson(db: List<List<String>>) {
     println("Enter a name or email to search all suitable people.")
     val data = scanner.nextLine().toLowerCase()
     val search = db.stream()
@@ -41,21 +42,23 @@ fun findPerson(db: MutableList<List<String>>) {
     println()
 }
 
-fun printDb(db: MutableList<List<String>>) {
+fun printDb(db: List<List<String>>) {
     print("=== List of people ===\n")
     db.map { it.joinToString(" ") }
             .forEach(::println)
 }
 
-fun initDb(): MutableList<List<String>> {
-    print("Enter the number of people:\n")
-    val noOfPeople = scanner.nextInt()
-    print("Enter all people:\n")
-    scanner.nextLine()
-    val db = mutableListOf<List<String>>()
-    repeat(noOfPeople) {
-        db.add(scanner.nextLine().split(" "))
+fun initDb(args: Array<String>): List<List<String>> {
+    val path = findDataPath(args)
+    return File(path).readLines()
+            .map { it.split(" ") }
+}
+
+fun findDataPath(args: Array<String>): String {
+    for (arg in args) {
+        if (arg == "--data") {
+            return args[arg.indexOf(arg) + 1]
+        }
     }
-    println()
-    return db
+    throw IllegalArgumentException("Cannot find --data in ${args.joinToString()}")
 }
